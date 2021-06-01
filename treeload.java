@@ -31,7 +31,7 @@ public class treeload {
         String datafile = "heap." + pageSize;
         long startTime = 0;
         long finishTime = 0;
-        int numBytesInOneRecord = constants.INDEX_RECORD_SIZE;
+        int numBytesInOneRecord = constants.TOTAL_SIZE;
         int numBytesInSdtnameField = constants.STD_NAME_SIZE;
         int numRecordsPerPage = pageSize/numBytesInOneRecord;
         byte[] page = new byte[pageSize];
@@ -45,6 +45,7 @@ public class treeload {
         String outputFileName = "index." + pageSize;
         int numRecordsLoaded = 0;
         int numberOfPagesUsed = 0;
+        int r1 = 0;
 
         try {
             inStream = new FileInputStream(datafile);
@@ -74,13 +75,12 @@ public class treeload {
                     
                     //add all new records into list
                     records.add(newRecord);
-                    
+                    r1++;
                     
                 }
                 pageNum++;
             }
 
-            finishTime = System.nanoTime();
             
             //sort the record
             records.sort(new sdtNameSorter());
@@ -138,6 +138,8 @@ public class treeload {
             outputStream = new FileOutputStream(outputFileName, true);
             byteOutputStream = new ByteArrayOutputStream();
             dataOutput = new DataOutputStream(byteOutputStream);
+            int numBytesInOneIRecord = constants.INDEX_RECORD_SIZE;
+            int numRecordsPerPage2 = pageSize/numBytesInOneIRecord;
             
             for(Record r : records) {
             	
@@ -148,7 +150,7 @@ public class treeload {
             	numRecordsLoaded++;
             	
                 // check if a new page is needed
-                if (numRecordsLoaded % numRecordsPerPage == 0) {
+                if (numRecordsLoaded % numRecordsPerPage2 == 0) {
                     dataOutput.flush();
                     
                     // Get the byte array of loaded records, copy to an empty page and writeout
@@ -164,7 +166,7 @@ public class treeload {
             }
             
             // At end of csv, check if there are records in the current page to be written out
-            if (numRecordsLoaded % numRecordsPerPage != 0) {
+            if (numRecordsLoaded % numRecordsPerPage2 != 0) {
                 dataOutput.flush();
                 byte[] page2 = new byte[pageSize];
                 byte[] records2 = byteOutputStream.toByteArray();
@@ -175,8 +177,9 @@ public class treeload {
                 byteOutputStream.reset();
             }
              
-            
+            finishTime = System.nanoTime();
         }
+        
         catch (FileNotFoundException e) {
             System.err.println("File not found " + e.getMessage());
         }
@@ -200,8 +203,9 @@ public class treeload {
         }
         
         long timeInMilliseconds = (finishTime - startTime)/constants.MILLISECONDS_PER_SECOND;
-        System.out.println(numberOfPagesUsed);
+        System.out.println("Pages used: " + numberOfPagesUsed);
         System.out.println("Time taken: " + timeInMilliseconds + " ms");
+        System.out.println(r1);
     }
 	
     // Writes out a byte array to file using a FileOutputStream
